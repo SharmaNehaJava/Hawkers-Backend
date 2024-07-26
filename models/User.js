@@ -7,27 +7,28 @@ const userSchema = new mongoose.Schema({
         type:String,
         required:true
     },
-    mobile:{
-        type:Number,
-        required:true,
-    },
     email:{
         type:String,
         unique:true,
-        required:true
-    },
-    DOB:{
-        type:Date,
-        required:true
-    },
-    Gender:{
-        type:Boolean,
         required:true
     },
     password:{
         type:String,
         required:true
     },
+    mobile:{
+        type:Number,
+        required:true,
+    },
+    dob:{
+        type:Date,
+        required:true
+    },
+    gender:{
+        type:String,
+        required:true
+    },
+    
 }, {timestamps:true});
 
 // Encrypt password before saving
