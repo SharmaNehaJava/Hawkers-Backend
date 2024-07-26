@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "description": "Hawkers-a web based application where you can see the mobile hawkers nearby",
   "main": "index.js",
-  "type":"module",
+  "type": "module",
   "scripts": {
+    "dev": "node index.js",
+    "server":"nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -13,6 +15,19 @@
   "author": "Neha Sharma",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.19.2"
+    "axios": "^1.7.2",
+    "bcryptjs": "^2.4.3",
+    "cookie-session": "^2.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-async-handler": "^1.2.0",
+    "google-auth-library": "^9.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.4.4",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "socket.io": "^4.7.5",
+    "socketio": "^1.0.0"
   }
 }

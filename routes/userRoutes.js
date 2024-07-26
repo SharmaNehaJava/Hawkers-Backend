@@ -1,9 +1,19 @@
 import express from 'express';
-import {protect } from '../middlewares/authMiddleware';
-import {getUserProfile, updateUserProfile} from '../controllers/userController'
+import { deleteUserAccount, getUserProfile, updateUserProfile, getUserOrders, getUserAddresses, addUserAddress } from '../controllers/userController.js';
+import { registerUser, loginUser, googleAuth } from '../controllers/authController.js';
+import { protect } from '../middlewares/authMiddleware.js';
 
-const router  = express.Router();
+const router = express.Router();
 
-router.route('/profile').get(protect, getUserProfile).put(protect, updateUserProfile);
+router.post('/register', registerUser);
+router.post('/login', loginUser)
+router.post('/google', googleAuth);;
+router.get('/profile', protect, getUserProfile);
+router.put('/profile', protect, updateUserProfile);
+router.delete('/deleteAccount', protect, deleteUserAccount);
+router.get('/orders', protect, getUserOrders);
+router.get('/addresses', protect, getUserAddresses);
+router.post('/addresses', protect, addUserAddress);
 
-module.exports = router; 
+export default router;
+
