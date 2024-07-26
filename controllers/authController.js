@@ -1,9 +1,10 @@
-import User from '../models/User'
-import Vendor from '../models/Vender'
-import jwt from '../utils/generateToker'
+import User from '../models/User.js';
+import Vendor from '../models/Vendor.js';
+import generateToken from '../utils/generateToken.js';
+import { OAuth2Client } from 'google-auth-library';
 
 // Register User
-exports.registerUser = async (req, res) => {
+export const registerUser = async (req, res) => {
     const { name, email, password } = req.body;
   
     const userExists = await User.findOne({ email });
@@ -26,7 +27,8 @@ exports.registerUser = async (req, res) => {
   };
   
   // Login User
-  exports.loginUser = async (req, res) => {
+  export const loginUser = async (req, res) => {
+    console.log('Login request received:', req.body);
     const { email, password } = req.body;
   
     const user = await User.findOne({ email });
@@ -43,9 +45,43 @@ exports.registerUser = async (req, res) => {
       res.status(401).json({ message: 'Invalid email or password' });
     }
   };
+
+  export const googleAuth = async (req, res) => {
+    const { tokenId } = req.body;
+    const client = new OAuth2Client(85478123981-movailm7ao3v4gnli8rpg2jcvlcva2ru.apps.googleusercontent.com);
+    
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: tokenId,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const { email, name, picture, sub } = ticket.getPayload();
+        
+        let user = await User.findOne({ email });
+        
+        if (!user) {
+            user = await User.create({
+                name,
+                email,
+                password: sub, // you may want to hash this or use a specific field for OAuth users
+                picture
+            });
+        }
+        
+        res.json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            picture: user.picture,
+            token: generateToken(user._id),
+        });
+    } catch (error) {
+        res.status(400).json({ message: 'Google authentication failed', error });
+    }
+};
   
   // Register Vendor
-  exports.registerVendor = async (req, res) => {
+  export const registerVendor = async (req, res) => {
     const { name, email, password, location, products } = req.body;
   
     const vendorExists = await Vendor.findOne({ email });
@@ -70,7 +106,7 @@ exports.registerUser = async (req, res) => {
   };
   
   // Login Vendor
-  exports.loginVendor = async (req, res) => {
+  export const loginVendor = async (req, res) => {
     const { email, password } = req.body;
   
     const vendor = await Vendor.findOne({ email });
