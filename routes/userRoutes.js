@@ -1,19 +1,23 @@
 import express from 'express';
-import { deleteUserAccount, getUserProfile, updateUserProfile, getUserOrders, getUserAddresses, addUserAddress } from '../controllers/userController.js';
-import { registerUser, loginUser, googleAuth } from '../controllers/authController.js';
+import {getUserProfile, updateUserProfile, getUserOrders, getUserAddresses, addUserAddress, deleteUserAccount } from '../controllers/userController.js';
+import { registerUser, requestOTP, verifyOTP} from '../controllers/authController.js';
 import { protect } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
+router.post('/request-otp', requestOTP);
+router.post('/verify-otp', verifyOTP);
 router.post('/register', registerUser);
-router.post('/login', loginUser)
-router.post('/google', googleAuth);;
-router.get('/profile', protect, getUserProfile);
-router.put('/profile', protect, updateUserProfile);
+
+
+// router.post('/google', googleAuth);
+router.get('/getprofile', protect, getUserProfile);
+router.put('/updateprofile', protect, updateUserProfile);
 router.delete('/deleteAccount', protect, deleteUserAccount);
 router.get('/orders', protect, getUserOrders);
-router.get('/addresses', protect, getUserAddresses);
-router.post('/addresses', protect, addUserAddress);
+router.get('/getaddresses', protect, getUserAddresses);
+router.post('/addaddresses', protect, addUserAddress);
+router.post('/deleteaccount', protect, deleteUserAccount);
 
 export default router;
 

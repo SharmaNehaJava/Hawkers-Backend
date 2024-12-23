@@ -3,19 +3,20 @@ import bcrypt from 'bcryptjs';
 
 const venderSchema = new mongoose.Schema({
     name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  location: { type: { lat: Number, lng: Number }, required: true },
-  products: [{ type: String }],
+    email: { type: String, required: true, unique: true },
+    mobile: { type: String, required: true,     unique: true }, 
+    isMobileVerified: { type: Boolean, default: false }, 
+    products: [{ type: String }],
+    location: {
+        type: { type: String, default: 'Point' },
+        coordinates: [Number], // [longitude, latitude]
+    },
+    businessName: { type: String, required: true },
+    products: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+    createdAt: { type: Date, default: Date.now },
+
 }, { timestamps: true });
 
-venderSchema.pre('save',async function (next){
-  if(!this.isModified('password')){
-    next();
-  }
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-})
 const Vendor = mongoose.model('Vendor', venderSchema);
 
 export default Vendor;

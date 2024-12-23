@@ -1,50 +1,42 @@
-import mongoose from "mongoose"
-import bcrypt from 'bcryptjs'
+import mongoose from 'mongoose';
 
-
-const userSchema = new mongoose.Schema({
-    name:{
-        type:String,
-        required:true
+const userSchema = mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
     },
-    email:{
-        type:String,
-        unique:true,
-        required:true
+    email: {
+      type: String,
+      required: true,
+      unique: true,
     },
-    password:{
-        type:String,
-        required:true
+    isEmailVerified: {
+       type: Boolean, default: false
     },
-    mobile:{
-        type:Number,
-        required:true,
+    mobile: {
+      type: String,
+      required: true,
     },
-    dob:{
-        type:Date,
-        required:true
+    isMobileVerified: {
+      type: Boolean, default: false 
     },
-    gender:{
-        type:String,
-        required:true
+    dob: {
+      type: Date,
+      required: true,
     },
-    
-}, {timestamps:true});
-
-// Encrypt password before saving
-userSchema.pre('save', async function(next) {
-    if(!this.isModified('password')){
-        next();
-    }
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-});
-
-// Method to compare entered password with hashed password
-userSchema.methods.matchPassword = async function(enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password);
-};
+    gender: {
+      type: String,
+      required: true,
+    },
+    otp: String,
+    otpExpiry: Date,
+  },
+  {
+    timestamps: true,
+  }
+);
 
 const User = mongoose.model('User', userSchema);
 
-export default User; 
+export default User;

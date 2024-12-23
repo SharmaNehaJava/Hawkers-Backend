@@ -3,9 +3,7 @@ import User from '../models/User.js';
 import Order from '../models/Order.js';
 import Address from '../models/addressModel.js';
 
-// @desc Get user profile
-// @route GET /api/user/profile
-// @access Private
+
 const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
@@ -14,7 +12,9 @@ const getUserProfile = asyncHandler(async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      isEmailVerified: user.isEmailVerified,
       mobile: user.mobile,
+      isMobileVerified: user.isMobileVerified,
       dob: user.dob,
       gender: user.gender,
     });
@@ -24,26 +24,31 @@ const getUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc Update user profile
-// @route PUT /api/user/profile
-// @access Private
 const updateUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
   if (user) {
     user.name = req.body.name || user.name;
-    user.email = req.body.email || user.email;
-    user.mobile = req.body.mobile || user.mobile;
     user.dob = req.body.dob || user.dob;
     user.gender = req.body.gender || user.gender;
+
+    if (!user.isEmailVerified) {
+      user.email = req.body.email || user.email;
+    }
+
+    if (!user.isMobileVerified) {
+      user.mobile = req.body.mobile || user.mobile;
+    }
 
     const updatedUser = await user.save();
 
     res.json({
-      _id: updatedUser._id,
+       _id: updatedUser._id,
       name: updatedUser.name,
       email: updatedUser.email,
+      isEmailVerified: updatedUser.isEmailVerified,
       mobile: updatedUser.mobile,
+      isMobileVerified: updatedUser.isMobileVerified,
       dob: updatedUser.dob,
       gender: updatedUser.gender,
     });
@@ -57,9 +62,11 @@ const deleteUserAccount = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
   if (user) {
+    await Order.deleteMany({ user: req.user._id });
+    await Address.deleteMany({ user: req.user._id });
     await user.remove();
-    res.json({ message: 'User account deleted' });
-    console.log("User Deleted")
+
+    res.json({ message: 'User account and related data deleted' });
   } else {
     res.status(404);
     throw new Error('User not found');
@@ -86,6 +93,14 @@ const getUserAddresses = asyncHandler(async (req, res) => {
 // @route POST /api/user/addresses
 // @access Private
 const addUserAddress = asyncHandler(async (req, res) => {
+  if (req.body.isDefault) {
+    // Unset previous default addresses
+    await Address.updateMany(
+      { user: req.user._id, isDefault: true },
+      { isDefault: false }
+    );
+  }
+
   const newAddress = new Address({
     user: req.user._id,
     pincode: req.body.pincode,
