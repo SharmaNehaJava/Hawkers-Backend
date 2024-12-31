@@ -89,34 +89,75 @@ const getUserAddresses = asyncHandler(async (req, res) => {
   res.json(addresses);
 });
 
+
 // @desc Add user address
 // @route POST /api/user/addresses
 // @access Private
 const addUserAddress = asyncHandler(async (req, res) => {
-  if (req.body.isDefault) {
-    // Unset previous default addresses
-    await Address.updateMany(
-      { user: req.user._id, isDefault: true },
-      { isDefault: false }
-    );
+  try {
+    if (req.body.isDefault) {
+      // Unset previous default addresses
+      await Address.updateMany(
+        { user: req.user._id, isDefault: true },
+        { isDefault: false }
+      );
+    }
+
+    const newAddress = new Address({
+      user: req.user._id,
+      pincode: req.body.pincode,
+      state: req.body.state,
+      houseNumber: req.body.houseNumber,
+      building: req.body.building,
+      street: req.body.street,
+      area: req.body.area,
+      localityTown: req.body.localityTown,
+      cityDistrict: req.body.cityDistrict,
+      type: req.body.type,
+      isDefault: req.body.isDefault || false,
+    });
+
+    const savedAddress = await newAddress.save();
+    res.status(201).json(savedAddress);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
   }
+});
+// @desc Update user address
+// @route PUT /api/users/updateaddress/:id
+// @access Private
+const updateUserAddress = asyncHandler(async (req, res) => {
+  const address = await Address.findById(req.params.id);
 
-  const newAddress = new Address({
-    user: req.user._id,
-    pincode: req.body.pincode,
-    state: req.body.state,
-    houseNumber: req.body.houseNumber,
-    building: req.body.building,
-    street: req.body.street,
-    area: req.body.area,
-    localityTown: req.body.localityTown,
-    cityDistrict: req.body.cityDistrict,
-    type: req.body.type,
-    isDefault: req.body.isDefault || false,
-  });
+  if (address) {
+    if (req.body.isDefault) {
+      // Unset previous default addresses
+      await Address.updateMany(
+        { user: req.user._id, isDefault: true },
+        { isDefault: false }
+      );
+    }
 
-  const savedAddress = await newAddress.save();
-  res.status(201).json(savedAddress);
+    address.name = req.body.name || address.name;
+    address.mobileNumber = req.body.mobileNumber || address.mobileNumber;
+    address.pincode = req.body.pincode || address.pincode;
+    address.state = req.body.state || address.state;
+    address.houseNumber = req.body.houseNumber || address.houseNumber;
+    address.building = req.body.building || address.building;
+    address.street = req.body.street || address.street;
+    address.area = req.body.area || address.area;
+    address.localityTown = req.body.localityTown || address.localityTown;
+    address.cityDistrict = req.body.cityDistrict || address.cityDistrict;
+    address.type = req.body.type || address.type;
+    address.isDefault = req.body.isDefault || address.isDefault;
+
+    const updatedAddress = await address.save();
+    res.json(updatedAddress);
+  } else {
+    res.status(404);
+    throw new Error('Address not found');
+  }
 });
 
-export { getUserProfile, updateUserProfile, getUserOrders, getUserAddresses, addUserAddress, deleteUserAccount};
+export { getUserProfile, updateUserProfile, getUserOrders, getUserAddresses, addUserAddress, deleteUserAccount, updateUserAddress };

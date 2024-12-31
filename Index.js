@@ -10,6 +10,7 @@ import userRoutes from './routes/userRoutes.js';
 import vendorRoutes from './routes/vendorRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import articlesRoutes from './routes/articles.js';
+import productRoutes from './routes/productRoutes.js';
 // import paymentRoutes from './routes/paymentRoutes.js';
 
 
@@ -37,6 +38,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/articles', articlesRoutes); 
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/products', productRoutes); 
 
 io.on('connection', (socket) => {
     console.log('A user connected');

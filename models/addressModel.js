@@ -41,13 +41,13 @@ const addressSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['home', 'office', 'other'],
+    enum: ['Home', 'Work', 'Other'], // Ensure 'Home' is included here
   },
   isDefault: {
     type: Boolean,
     default: false,
   },
-}, { timestamps: true });
+});
 
 const Address = mongoose.model('Address', addressSchema);
 

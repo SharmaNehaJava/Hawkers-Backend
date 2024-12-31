@@ -1,5 +1,5 @@
 import express from 'express';
-import {getUserProfile, updateUserProfile, getUserOrders, getUserAddresses, addUserAddress, deleteUserAccount } from '../controllers/userController.js';
+import {getUserProfile, updateUserProfile, getUserOrders, getUserAddresses, addUserAddress, deleteUserAccount, updateUserAddress } from '../controllers/userController.js';
 import { registerUser, requestOTP, verifyOTP} from '../controllers/authController.js';
 import { protect } from '../middlewares/authMiddleware.js';
 
@@ -17,7 +17,7 @@ router.delete('/deleteAccount', protect, deleteUserAccount);
 router.get('/orders', protect, getUserOrders);
 router.get('/getaddresses', protect, getUserAddresses);
 router.post('/addaddresses', protect, addUserAddress);
-router.post('/deleteaccount', protect, deleteUserAccount);
+router.put('/updateaddress/:id', protect, updateUserAddress);
 
 export default router;
 

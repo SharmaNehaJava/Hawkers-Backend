@@ -19,6 +19,11 @@ const productSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  measurement: {
+    type: String,
+    enum: ['Kg', 'L', 'per piece', 'gm', 'ml', 'Full', 'Half','Other'],
+    required: true,
+  },
   description: {
     type: String,
     required: true,
@@ -29,6 +34,6 @@ const productSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-const Product = mongoose.model('Product', productSchema);
+const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
 
 export default Product;

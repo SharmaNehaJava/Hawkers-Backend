@@ -17,3 +17,8 @@ export const sendVerificationEmail = async (email, otp) => {
         console.error('Error sending email:', error);
     }
 };
+
+
+
+
+
