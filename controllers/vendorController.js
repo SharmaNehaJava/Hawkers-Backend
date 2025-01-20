@@ -1,11 +1,12 @@
-// File: controllers/authController.js
+import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import Vendor from '../models/Vendor.js';
 import Product from '../models/Product.js';
 import Order from '../models/Order.js';
 import User from '../models/User.js';
 
-import { sendSMS } from '../utils/sendSMS.js'; 
+import { sendSMS } from '../utils/sendSMS.js';
 import generateToken from '../utils/generateToken.js';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import twilio from 'twilio';
@@ -15,24 +16,41 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const serviceSid = process.env.TWILIO_SERVICE_SID;
 const client = twilio(accountSid, authToken);
 
-import AWS from 'aws-sdk';
-import multer from 'multer';
-import multerS3 from 'multer-s3';
-
-const s3 = new AWS.S3();
-const upload = multer({
-    storage: multerS3({
-        s3,
-        bucket: process.env.AWS_S3_BUCKET_NAME,
-        acl: 'public-read',
-        key: (req, file, cb) => {
-            const category = req.body.category || 'other'; // Default to 'other' if no category provided
-            const validCategories = ['fruits', 'veges', 'fast-food', 'dairy', 'juices', 'other'];
-            const folder = validCategories.includes(category) ? category : 'other';
-            cb(null, `${folder}/${Date.now().toString()}-${file.originalname}`);
-        },
-    }),
+const s3Client = new S3Client({
+    region: process.env.AWS_REGION,
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY,
+        secretAccessKey: process.env.AWS_SECRET_KEY,
+    },
 });
+
+
+// const S3Client = new S3Client({
+//      region: process.env.AWS_REGION,
+//         credentials: {
+//             accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+//             secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+//         },
+//  });
+
+//  async function putObject(filename, contentType) {
+//     const command = new PutObjectCommand({
+//         Bucket: process.env.AWS_BUCKET_NAME,
+//         key:`product-image/${filename}`,
+//         ContentType: contentType,
+//     });
+//     const url = await getSignedUrl(S3Client, command, { expiresIn: 3600 });
+//     return url;
+//  }
+
+//  async function getObjectURL(Key){
+//     const command = new GetObjectCommand({
+//         Bucket: process.env.AWS_BUCKET_NAME,
+//         Key: Key,
+//     });
+//     const url = await getSignedUrl(S3Client, command, { expiresIn: 3600 });
+//     return url;
+//  }
 
 
 // Function to generate OTP
@@ -41,18 +59,20 @@ const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString()
 // Request OTP for Vendor (login/registration)
 export const requestVendorOTP = async (req, res) => {
     const { identifier, method, actionType } = req.body;
-    
+    console.log('Request Body:', req.body);
+
     if (!identifier || !method || !actionType) {
+        console.error('Missing required fields:', req.body);
         return res.status(400).json({ message: 'Missing required fields' });
     }
 
     try {
         let vendor = await Vendor.findOne({ $or: [{ email: identifier }, { mobile: identifier }] });
-    
+
         if (actionType === 'signin' && !vendor) {
             return res.status(404).json({ message: 'Vendor not found. Please register first.', vendorExists: false });
         }
-    
+
         if (actionType === 'signup' && vendor) {
             return res.status(400).json({ message: 'Vendor already exists. Please log in.', vendorExists: true });
         }
@@ -72,38 +92,40 @@ export const requestVendorOTP = async (req, res) => {
 // Verify OTP for Vendor
 export const verifyVendorOTP = async (req, res) => {
     const { identifier, otp, actionType, method } = req.body;
-    
+
     try {
         const phoneNumberObj = parsePhoneNumberFromString(identifier, 'IN');
         const formattedIdentifier = phoneNumberObj ? phoneNumberObj.format('E.164') : identifier;
 
         const verificationCheck = await client.verify.v2.services(serviceSid)
-            .verificationChecks.create({ to: formattedIdentifier, code: otp });
+            .verificationChecks
+            .create({ to: formattedIdentifier, code: otp });
 
         if (verificationCheck.status === 'approved') {
-            const vendor = await Vendor.findOne({ $or: [{ email: identifier }, { mobile: identifier }] });
-
-            if (!vendor && actionType === 'signin') {
-                return res.status(404).json({ message: 'Vendor not found.' });
-            }
-            
             if (actionType === 'signin') {
+                const vendor = await Vendor.findOne({ $or: [{ email: identifier }, { mobile: identifier }] });
+
+                if (!vendor) {
+                    return res.status(404).json({ message: 'Vendor not found.' });
+                }
+
                 const token = generateToken(vendor._id);
-                console.log('Generated Token:', token);
+
+                if (method === 'sms') {
+                    vendor.isMobileVerified = true;
+                } else if (method === 'email') {
+                    vendor.isEmailVerified = true;
+                }
+                await vendor.save();
+
                 return res.status(200).json({ verified: true, token, vendor });
+            } else if (actionType === 'signup') {
+                return res.status(200).json({ verified: true });
             }
-
-            if (method === 'sms') {
-                vendor.isMobileVerified = true;
-            } else if (method === 'email') {
-                vendor.isEmailVerified = true;
-            }
-
-            await vendor.save();
-            return res.status(200).json({ verified: true });
         } else {
             return res.status(400).json({ message: 'Invalid or expired OTP.', verified: false });
         }
+
     } catch (error) {
         return res.status(500).json({ message: 'Failed to verify OTP. Please try again later.', verified: false });
     }
@@ -111,7 +133,7 @@ export const verifyVendorOTP = async (req, res) => {
 
 // Vendor Registration
 export const registerVendor = async (req, res) => {
-    const { name, email, mobile, businessName, address, adhaarCard, vendingLicense } = req.body;
+    const { name, email, mobile, businessName,businessType, address } = req.body;
 
     try {
         let existingVendor = await Vendor.findOne({ $or: [{ email }, { mobile }] });
@@ -125,9 +147,8 @@ export const registerVendor = async (req, res) => {
             email,
             mobile,
             businessName,
+            businessType,
             address,
-            adhaarCard,
-            vendingLicense,
             isVerified: true
         });
 
@@ -146,7 +167,7 @@ export const getVendorProfile = async (req, res) => {
     try {
         const vendor = await Vendor.findById(req.vendor.id);
         if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
-        
+
         res.status(200).json(vendor);
     } catch (error) {
         res.status(500).json({ message: 'Failed to retrieve vendor profile' });
@@ -156,11 +177,11 @@ export const getVendorProfile = async (req, res) => {
 // Update Vendor Profile
 export const updateVendorProfile = async (req, res) => {
     const updates = req.body;
-    
+
     try {
         const vendor = await Vendor.findByIdAndUpdate(req.vendor.id, updates, { new: true });
         if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
-        
+
         res.status(200).json({ message: 'Profile updated successfully', vendor });
     } catch (error) {
         res.status(500).json({ message: 'Failed to update vendor profile' });
@@ -169,39 +190,55 @@ export const updateVendorProfile = async (req, res) => {
 
 // Add a New Product
 export const addProduct = async (req, res) => {
-    const { name, description, price, stock, category, imageUrl } = req.body;
-
+    const { name, description, price, stock, category, measurement, imageUrl } = req.body;
+    // console.log('Request Body:', req.body);
     // Handle Image Upload to AWS S3
-    const file = req.file;
-    if (file) {
-        const uploadParams = {
+    try {
+        const newProduct = new Product({
+            vendor: req.vendor.id,
+            name,
+            description,
+            price,
+            stock,
+            category,
+            measurement,
+            imageUrl,
+        });
+
+        await newProduct.save();
+        res.status(201).json({ message: 'Product added successfully', product: newProduct });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to add product', error });
+    }
+};
+
+export const getSignedUrlForUpload = async (req, res) => {
+    const { filename, filetype, category } = req.body;
+    // console.log(filename);
+    //   console.log(filetype);
+    //   console.log(category);
+
+    //   console.log('S3Client:', s3Client);
+    // console.log(process.env.AWS_REGION);
+    // console.log(process.env.AWS_ACCESS_KEY);
+    // console.log(process.env.AWS_SECRET_KEY);
+    // console.log(process.env.AWS_BUCKET_NAME);
+    try {
+        const key = `product-categories/${category}/${Date.now()}-${filename}`;
+        // console.log("Key :"+key);
+        const command = new PutObjectCommand({
             Bucket: process.env.AWS_BUCKET_NAME,
-            Key: `${Date.now()}-${file.originalname}`,
-            Body: file.buffer,
-            ContentType: file.mimetype,
-        };
+            Key: key,
+            ContentType: filetype,
+        });
 
-        try {
-            const s3Response = await s3.upload(uploadParams).promise();
-            const productImageUrl = s3Response.Location;
-
-            const newProduct = new Product({
-                vendor: req.vendor.id,
-                name,
-                description,
-                price,
-                stock,
-                category,
-                imageUrl: productImageUrl,
-            });
-
-            await newProduct.save();
-            res.status(201).json({ message: 'Product added successfully', product: newProduct });
-        } catch (error) {
-            res.status(500).json({ message: 'Failed to upload product image to AWS S3', error });
-        }
-    } else {
-        res.status(400).json({ message: 'No image file uploaded' });
+        const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        // console.log('Signed URL generated:', url);
+        // console.log('Key:', key);
+        res.status(200).json({ url, key });
+    } catch (error) {
+        console.error('Error generating signed URL:', error);
+        res.status(500).json({ message: 'Failed to get signed URL', error });
     }
 };
 

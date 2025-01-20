@@ -7,6 +7,7 @@ import {
     getVendorProfile,
     updateVendorProfile,
     addProduct,
+    getSignedUrlForUpload,  // New: Get signed URL for uploading product images
     getVendorProducts,      // New: Get list of vendor's products
     updateProduct,          // New: Update product details
     deleteProduct,          // New: Delete a product
@@ -29,12 +30,13 @@ router.put('/profile', protect, updateVendorProfile);
 // Product Management
 router.post('/add-product', protect, addProduct);
 router.get('/products', protect, getVendorProducts);       // Get all products
-router.put('/product/:id', protect, updateProduct);        // Update product
-router.delete('/product/:id', protect, deleteProduct);     // Delete product
+router.post('/get-signed-url', protect, getSignedUrlForUpload);
+router.put('/update-product/:productId', protect, updateProduct);        // Update product
+router.delete('/delete-product/:productId', protect, deleteProduct);     // Delete product
 
 // Order Management
 router.get('/orders', protect, getVendorOrders);
-router.put('/orders/:id/status', protect, updateOrderStatus);  // Update order status
+router.put('/update-order-status/:id', protect, updateOrderStatus);  // Update order status
 
 // Dashboard/Analytics (Optional)
 router.get('/dashboard', protect, getVendorDashboard);     // Basic stats and analytics

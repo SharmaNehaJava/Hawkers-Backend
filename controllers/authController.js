@@ -7,7 +7,6 @@ import twilio from 'twilio';
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const serviceSid = process.env.TWILIO_SERVICE_SID;
-
 const client = twilio(accountSid, authToken);
 
 export const requestOTP = async (req, res) => {
@@ -44,6 +43,7 @@ export const requestOTP = async (req, res) => {
 
 export const verifyOTP = async (req, res) => {
   const { identifier, otp, actionType, method } = req.body;
+  console.log('Request Body:', req.body);
 
   try {
     const phoneNumberObj = parsePhoneNumberFromString(identifier, 'IN');
@@ -54,6 +54,7 @@ export const verifyOTP = async (req, res) => {
       .create({ to: formattedIdentifier, code: otp });
 
     if (verificationCheck.status === 'approved') {
+      console.log('OTP verified:');
       if (actionType === 'signin') {
         const user = await User.findOne({ $or: [{ email: identifier }, { mobile: identifier }] });
 

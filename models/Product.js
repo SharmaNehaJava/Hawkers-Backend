@@ -2,13 +2,17 @@ import mongoose from 'mongoose';
 
 // Product schema
 const productSchema = new mongoose.Schema({
+  vendor: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'Vendor',
+  },
   name: {
     type: String,
     required: true,
   },
-  category: {
+  description: {
     type: String,
-    enum: ['Fruits', 'Vegetables', 'Fast Food', 'Dairy', 'Other', 'Juices'],
     required: true,
   },
   price: {
@@ -18,17 +22,19 @@ const productSchema = new mongoose.Schema({
   stock: {
     type: Number,
     default: 0,
+    required: true,
+  },
+  category: {
+    type: String,
+    enum: ['Fruits', 'Vegetables', 'Fast Food', 'Dairy','Juices', 'Other'],
+    required: true,
   },
   measurement: {
     type: String,
-    enum: ['Kg', 'L', 'per piece', 'gm', 'ml', 'Full', 'Half','Other'],
+    enum: ['Kg', 'L', 'per piece', 'gm', 'ml', 'Dozen','Other'],
     required: true,
   },
-  description: {
-    type: String,
-    required: true,
-  },
-  image: {
+  imageUrl: {
     type: String, // URL or path of the image
     required: true,
   },

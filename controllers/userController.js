@@ -1,7 +1,57 @@
 import asyncHandler from 'express-async-handler';
 import User from '../models/User.js';
+import Vendor from '../models/Vendor.js';
+import Product from '../models/Product.js';
 import Order from '../models/Order.js';
 import Address from '../models/addressModel.js';
+
+// Fetch nearby vendors
+export const getNearbyVendors = async (req, res) => {
+  const { lat, lng, radius, category, businessType } = req.query;
+  try {
+    const query = {
+      location: {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [lng, lat]
+          },
+          $maxDistance: radius
+        }
+      },
+      availability: true,
+      status: 'active'
+    };
+
+    if (category) {
+      query.category = category;
+    }
+
+    if (businessType) {
+      query.businessType = businessType;
+    }
+
+    const vendors = await Vendor.find(query);
+    res.json(vendors);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// Fetch vendor details and products
+export const getVendorDetails = async (req, res) => {
+  try {
+    const vendor = await Vendor.findById(req.params.id);
+    if (!vendor) {
+      return res.status(404).json({ message: 'Vendor not found' });
+    }
+
+    const products = await Product.find({ vendor: req.params.id });
+    res.json({ vendor, products });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
 
 
 const getUserProfile = asyncHandler(async (req, res) => {
@@ -139,8 +189,6 @@ const updateUserAddress = asyncHandler(async (req, res) => {
       );
     }
 
-    address.name = req.body.name || address.name;
-    address.mobileNumber = req.body.mobileNumber || address.mobileNumber;
     address.pincode = req.body.pincode || address.pincode;
     address.state = req.body.state || address.state;
     address.houseNumber = req.body.houseNumber || address.houseNumber;
@@ -150,7 +198,7 @@ const updateUserAddress = asyncHandler(async (req, res) => {
     address.localityTown = req.body.localityTown || address.localityTown;
     address.cityDistrict = req.body.cityDistrict || address.cityDistrict;
     address.type = req.body.type || address.type;
-    address.isDefault = req.body.isDefault || address.isDefault;
+    address.isDefault = req.body.isDefault !== undefined ? req.body.isDefault : address.isDefault;
 
     const updatedAddress = await address.save();
     res.json(updatedAddress);

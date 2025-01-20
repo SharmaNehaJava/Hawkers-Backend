@@ -19,10 +19,27 @@ const orderSchema = new mongoose.Schema({
             price: { type: Number, required: true },
         },
     ],
+    address: {
+        type: String,
+        required: true,
+    },
+    paymentId: {
+        type: String,
+        required: true,
+    },
     status: {
         type: String,
         required: true,
+        enum:['placed', 'processing', 'shipped', 'delivered'],
         default: 'Placed',
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now,
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now,
     },
 }, { timestamps: true });
 
