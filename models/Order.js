@@ -1,6 +1,18 @@
 // File: models/Order.js
 import mongoose from 'mongoose';
 
+const addressSchema = new mongoose.Schema({
+    pincode: { type: String, required: true },
+    state: { type: String, required: true },
+    houseNumber: { type: String, required: true },
+    building: { type: String, required: true },
+    street: { type: String, required: true },
+    area: { type: String, required: true },
+    localityTown: { type: String, required: true },
+    cityDistrict: { type: String, required: true },
+    type: { type: String, required: true, enum: ['Home', 'Work', 'Other'], },
+  });
+
 const orderSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -20,7 +32,7 @@ const orderSchema = new mongoose.Schema({
         },
     ],
     address: {
-        type: String,
+        type: addressSchema,
         required: true,
     },
     paymentId: {
@@ -30,17 +42,9 @@ const orderSchema = new mongoose.Schema({
     status: {
         type: String,
         required: true,
-        enum:['placed', 'processing', 'shipped', 'delivered'],
-        default: 'Placed',
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now,
-    },
+        enum: ['placed', 'processing', 'shipped', 'delivered', 'failed'],
+        default: 'placed',
+      },
 }, { timestamps: true });
 
 const Order = mongoose.model('Order', orderSchema);
