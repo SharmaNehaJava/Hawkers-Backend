@@ -6,37 +6,39 @@ import Order from '../models/Order.js';
 import Address from '../models/addressModel.js';
 
 // Fetch nearby vendors
-export const getNearbyVendors = async (req, res) => {
+export const getNearbyVendors = asyncHandler(async (req, res) => {
   const { lat, lng, radius, category, businessType } = req.query;
+
   try {
     const query = {
       location: {
         $near: {
           $geometry: {
-            type: "Point",
-            coordinates: [lng, lat]
+            type: 'Point',
+            coordinates: [parseFloat(lng), parseFloat(lat)],
           },
-          $maxDistance: radius
-        }
+          $maxDistance: parseInt(radius),
+        },
       },
       availability: true,
-      status: 'active'
+      status: 'active',
     };
 
-    if (category) {
+    if (category && category !== 'All') {
       query.category = category;
     }
 
-    if (businessType) {
+    if (businessType && businessType !== 'All') {
       query.businessType = businessType;
     }
 
-    const vendors = await Vendor.find(query);
+    const vendors = await Vendor.find(query).populate('products');
     res.json(vendors);
   } catch (error) {
+    console.error('Error fetching nearby vendors:', error);
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
-};
+});
 
 // Fetch vendor details and products
 export const getVendorDetails = async (req, res) => {

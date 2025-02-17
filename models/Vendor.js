@@ -1,15 +1,14 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 
 const venderSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    mobile: { type: String, required: true,     unique: true }, 
+    mobile: { type: String, required: true, unique: true }, 
     isMobileVerified: { type: Boolean, default: false }, 
     profileImage: {type: String},
     location: {
-        type: { type: String, enum: ['Point'], required: true },
-        coordinates: { type: [Number], required: true }
+        type: { type: String, enum: ['Point'],default: 'Point',required: true },   
+        coordinates: { type: [Number], required: false }
     },
     availability: { type: Boolean, default: false },
     businessName: { type: String, required: true },
@@ -24,6 +23,8 @@ const venderSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now },
 
 }, { timestamps: true });
+
+venderSchema.index({ location: '2dsphere' });
 
 const Vendor = mongoose.model('Vendor', venderSchema);
 

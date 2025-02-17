@@ -2,12 +2,12 @@
   "name": "server",
   "version": "1.0.0",
   "description": "Hawkers-a web based application where you can see the mobile hawkers nearby",
-  "main": "server.js",
+  "main": "app.js",
   "type": "module",
   "scripts": {
     "prebuild": "npm audit fix",
-    "start": "node server.js",
-    "server": "nodemon server.js",
+    "start": "node app.js",
+    "server": "nodemon app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

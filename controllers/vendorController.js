@@ -82,7 +82,7 @@ export const requestVendorOTP = async (req, res) => {
             await sendSMS(identifier);
             return res.status(200).json({ message: 'OTP sent via SMS.', vendorExists: !!vendor });
         }
-
+        console.log("Done from here.");
         return res.status(400).json({ message: 'Invalid method provided.' });
     } catch (error) {
         return res.status(500).json({ error: 'Failed to send OTP. Please try again later.' });
@@ -92,33 +92,45 @@ export const requestVendorOTP = async (req, res) => {
 // Verify OTP for Vendor
 export const verifyVendorOTP = async (req, res) => {
     const { identifier, otp, actionType, method } = req.body;
+    console.log('Request Body:', req.body);
 
     try {
         const phoneNumberObj = parsePhoneNumberFromString(identifier, 'IN');
         const formattedIdentifier = phoneNumberObj ? phoneNumberObj.format('E.164') : identifier;
 
+        console.log('Pretend Twilio verify for:', formattedIdentifier, 'with code:', otp);
         const verificationCheck = await client.verify.v2.services(serviceSid)
             .verificationChecks
             .create({ to: formattedIdentifier, code: otp });
 
+        console.log('Verification Check:', verificationCheck);
         if (verificationCheck.status === 'approved') {
             if (actionType === 'signin') {
+                console.log(identifier)
                 const vendor = await Vendor.findOne({ $or: [{ email: identifier }, { mobile: identifier }] });
 
                 if (!vendor) {
                     return res.status(404).json({ message: 'Vendor not found.' });
                 }
 
-                const token = generateToken(vendor._id);
-
                 if (method === 'sms') {
                     vendor.isMobileVerified = true;
+                    console.log('Vendor:', vendor);
                 } else if (method === 'email') {
                     vendor.isEmailVerified = true;
                 }
-                await vendor.save();
-
-                return res.status(200).json({ verified: true, token, vendor });
+                vendor.status = 'active';
+                vendor.availability = true;
+                console.log("yha tk bhi ho gya bhn")
+                try {
+                    await vendor.save();
+                    console.log("chalo ye bhi ho gya");
+                    const token = generateToken(vendor._id);
+                    return res.status(200).json({ verified: true, token, vendor });
+                  } catch (saveError) {
+                    console.error('Error saving vendor:', saveError);
+                    return res.status(500).json({ error: 'Failed to save vendor. Please try again later.' });
+                  }
             } else if (actionType === 'signup') {
                 return res.status(200).json({ verified: true });
             }
