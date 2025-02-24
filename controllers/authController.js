@@ -46,6 +46,31 @@ export const verifyOTP = async (req, res) => {
   console.log('Request Body:', req.body);
 
   try {
+    // ✅ OTP Bypass for Testing Mode
+    if (otp === "123456") {
+      console.log("Testing mode: OTP bypassed ✅");
+      
+      if (actionType === "signin") {
+        const user = await User.findOne({ $or: [{ email: identifier }, { mobile: identifier }] });
+        if (!user) {
+          return res.status(404).json({ message: "User not found." });
+        }
+
+        const token = generateToken(user._id);
+        if (method === "sms") {
+          user.isMobileVerified = true;
+        } else if (method === "email") {
+          user.isEmailVerified = true;
+        }
+        await user.save();
+
+        return res.status(200).json({ verified: true, token, user });
+      } else if (actionType === "signup") {
+        return res.status(200).json({ verified: true });
+      }
+    }
+
+    // ✅ Normal OTP Verification via Twilio
     const phoneNumberObj = parsePhoneNumberFromString(identifier, 'IN');
     const formattedIdentifier = phoneNumberObj ? phoneNumberObj.format('E.164') : identifier;
 
