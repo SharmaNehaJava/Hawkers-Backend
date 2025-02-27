@@ -12,7 +12,7 @@ export const sendVerificationEmail = async (email, otp) => {
     };
     try {
         await sgMail.send(msg);
-        console.log('Verification email sent');
+        // console.log('Verification email sent');
     } catch (error) {
         console.error('Error sending email:', error);
     }

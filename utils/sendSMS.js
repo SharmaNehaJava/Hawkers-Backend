@@ -23,7 +23,7 @@ export const sendSMS = async (phoneNumber) => {
           .verifications
           .create({ to: formattedNumber, channel: 'sms' });
     
-        console.log('OTP sent:', verification.sid);
+        // console.log('OTP sent:', verification.sid);
     } catch (error) {
         console.error('Error sending OTP:', error);
         throw new Error('Failed to send OTP');

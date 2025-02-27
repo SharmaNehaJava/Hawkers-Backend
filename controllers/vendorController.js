@@ -31,7 +31,7 @@ const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString()
 // Request OTP for Vendor (login/registration)
 export const requestVendorOTP = async (req, res) => {
     const { identifier, method, actionType } = req.body;
-    console.log('Request Body:', req.body);
+    // console.log('Request Body:', req.body);
 
     if (!identifier || !method || !actionType) {
         console.error('Missing required fields:', req.body);
@@ -54,7 +54,7 @@ export const requestVendorOTP = async (req, res) => {
             await sendSMS(identifier);
             return res.status(200).json({ message: 'OTP sent via SMS.', vendorExists: !!vendor });
         }
-        console.log("Done from here.");
+        // console.log("Done from here.");
         return res.status(400).json({ message: 'Invalid method provided.' });
     } catch (error) {
         return res.status(500).json({ error: 'Failed to send OTP. Please try again later.' });
@@ -64,21 +64,21 @@ export const requestVendorOTP = async (req, res) => {
 // Verify OTP for Vendor
 export const verifyVendorOTP = async (req, res) => {
     const { identifier, otp, actionType, method } = req.body;
-    console.log('Request Body:', req.body);
+    // console.log('Request Body:', req.body);
 
     try {
         const phoneNumberObj = parsePhoneNumberFromString(identifier, 'IN');
         const formattedIdentifier = phoneNumberObj ? phoneNumberObj.format('E.164') : identifier;
 
-        console.log('Pretend Twilio verify for:', formattedIdentifier, 'with code:', otp);
+        // console.log('Pretend Twilio verify for:', formattedIdentifier, 'with code:', otp);
         const verificationCheck = await client.verify.v2.services(serviceSid)
             .verificationChecks
             .create({ to: formattedIdentifier, code: otp });
 
-        console.log('Verification Check:', verificationCheck);
+        // console.log('Verification Check:', verificationCheck);
         if (verificationCheck.status === 'approved') {
             if (actionType === 'signin') {
-                console.log(identifier)
+                // console.log(identifier)
                 const vendor = await Vendor.findOne({ $or: [{ email: identifier }, { mobile: identifier }] });
 
                 if (!vendor) {
@@ -87,16 +87,16 @@ export const verifyVendorOTP = async (req, res) => {
 
                 if (method === 'sms') {
                     vendor.isMobileVerified = true;
-                    console.log('Vendor:', vendor);
+                    // console.log('Vendor:', vendor);
                 } else if (method === 'email') {
                     vendor.isEmailVerified = true;
                 }
                 vendor.status = 'active';
                 vendor.availability = true;
-                console.log("yha tk bhi ho gya bhn")
+                // console.log("yha tk bhi ho gya bhn")
                 try {
                     await vendor.save();
-                    console.log("chalo ye bhi ho gya");
+                    // console.log("chalo ye bhi ho gya");
                     const token = generateToken(vendor._id);
                     return res.status(200).json({ verified: true, token, vendor });
                   } catch (saveError) {
@@ -139,7 +139,7 @@ export const registerVendor = async (req, res) => {
         await newVendor.save();
 
         const token = generateToken(newVendor._id);
-        console.log('Generated Token:', token);
+        // console.log('Generated Token:', token);
         res.status(201).json({ token, vendor: newVendor });
     } catch (error) {
         res.status(500).json({ error: 'Failed to register vendor.' });

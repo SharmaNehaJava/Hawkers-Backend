@@ -11,7 +11,7 @@ const client = twilio(accountSid, authToken);
 
 export const requestOTP = async (req, res) => {
   const { identifier, method, actionType } = req.body;
-  console.log('Request Body:', req.body);
+  // console.log('Request Body:', req.body);
 
   if (!identifier || !method || !actionType) {
     console.error('Missing required fields:', req.body);
@@ -43,7 +43,7 @@ export const requestOTP = async (req, res) => {
 
 export const verifyOTP = async (req, res) => {
   const { identifier, otp, actionType, method } = req.body;
-  console.log('Request Body:', req.body);
+  // console.log('Request Body:', req.body);
 
   try {
     // ✅ OTP Bypass for Testing Mode
@@ -79,7 +79,7 @@ export const verifyOTP = async (req, res) => {
       .create({ to: formattedIdentifier, code: otp });
 
     if (verificationCheck.status === 'approved') {
-      console.log('OTP verified:');
+      // console.log('OTP verified:');
       if (actionType === 'signin') {
         const user = await User.findOne({ $or: [{ email: identifier }, { mobile: identifier }] });
 

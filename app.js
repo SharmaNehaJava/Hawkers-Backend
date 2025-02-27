@@ -41,17 +41,6 @@ app.use('/api/vendors', vendorRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/products', productRoutes); 
 
-// io.on('connection', (socket) => {
-//     console.log('A user connected');
-    
-//     socket.on('disconnect', () => {
-//         console.log('A user disconnected');
-//     });
-
-//     socket.on('updateVendorLocation', (data) => {
-//         socket.broadcast.emit('vendorLocationUpdated', data);
-//     });
-// });
 
 httpServer.listen(process.env.PORT || 5174, () => {
     console.log(`Server running on port ${process.env.PORT}`);

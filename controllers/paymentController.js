@@ -43,7 +43,7 @@ export const createOrder = asyncHandler(async (req, res) => {
         paymentId: razorpayOrder.id,
         status: 'placed'
       });
-      console.log(order);
+      // console.log(order);
       return order.save();
     });
 
