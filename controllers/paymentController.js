@@ -152,3 +152,24 @@ const verifySignature = (orderId, paymentId, signature) => {
   return generatedSignature === signature;
 };
 
+export const handlePaymentFailure = asyncHandler(async (req, res) => {
+  const { orderId } = req.body;
+
+  try {
+    const order = await Order.findOneAndUpdate(
+      { paymentId: orderId },
+      { status: 'failed' },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.status(200).json({ message: 'Order status updated to failed' });
+  } catch (error) {
+    console.error('Error handling payment failure:', error);
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+});
+

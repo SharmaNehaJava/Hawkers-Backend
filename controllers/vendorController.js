@@ -25,34 +25,6 @@ const s3Client = new S3Client({
 });
 
 
-// const S3Client = new S3Client({
-//      region: process.env.AWS_REGION,
-//         credentials: {
-//             accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-//             secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-//         },
-//  });
-
-//  async function putObject(filename, contentType) {
-//     const command = new PutObjectCommand({
-//         Bucket: process.env.AWS_BUCKET_NAME,
-//         key:`product-image/${filename}`,
-//         ContentType: contentType,
-//     });
-//     const url = await getSignedUrl(S3Client, command, { expiresIn: 3600 });
-//     return url;
-//  }
-
-//  async function getObjectURL(Key){
-//     const command = new GetObjectCommand({
-//         Bucket: process.env.AWS_BUCKET_NAME,
-//         Key: Key,
-//     });
-//     const url = await getSignedUrl(S3Client, command, { expiresIn: 3600 });
-//     return url;
-//  }
-
-
 // Function to generate OTP
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -226,15 +198,6 @@ export const addProduct = async (req, res) => {
 
 export const getSignedUrlForUpload = async (req, res) => {
     const { filename, filetype, category } = req.body;
-    // console.log(filename);
-    //   console.log(filetype);
-    //   console.log(category);
-
-    //   console.log('S3Client:', s3Client);
-    // console.log(process.env.AWS_REGION);
-    // console.log(process.env.AWS_ACCESS_KEY);
-    // console.log(process.env.AWS_SECRET_KEY);
-    // console.log(process.env.AWS_BUCKET_NAME);
     try {
         const key = `product-categories/${category}/${Date.now()}-${filename}`;
         // console.log("Key :"+key);

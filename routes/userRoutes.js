@@ -2,7 +2,7 @@ import express from 'express';
 import {getNearbyVendors, getVendorDetails, getUserProfile, updateUserProfile, getUserOrders, getUserAddresses, addUserAddress, deleteUserAccount, updateUserAddress } from '../controllers/userController.js';
 import { registerUser, requestOTP, verifyOTP} from '../controllers/authController.js';
 import { protect } from '../middlewares/authMiddleware.js';
-import { createOrder, handlePaymentSuccess } from '../controllers/paymentController.js';
+import { createOrder, handlePaymentSuccess, handlePaymentFailure } from '../controllers/paymentController.js';
 
 const router = express.Router();
 
@@ -28,6 +28,7 @@ router.get('/getKey', (req, res) => {
 });
 router.post('/payment/order',protect, createOrder);
 router.post('/payment/success',protect, handlePaymentSuccess);
+router.post('/payment/failure', protect, handlePaymentFailure);
 
 export default router;
 
