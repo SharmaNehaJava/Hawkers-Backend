@@ -9,6 +9,7 @@ import Address from '../models/addressModel.js';
 export const getNearbyVendors = asyncHandler(async (req, res) => {
   const { lat, lng, radius, category, businessType } = req.query;
 
+
   try {
     const query = {
       location: {
@@ -116,7 +117,7 @@ const deleteUserAccount = asyncHandler(async (req, res) => {
   if (user) {
     await Order.deleteMany({ user: req.user._id });
     await Address.deleteMany({ user: req.user._id });
-    await user.remove();
+    await user.deleteOne();
 
     res.json({ message: 'User account and related data deleted' });
   } else {
