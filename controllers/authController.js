@@ -10,7 +10,7 @@ const serviceSid = process.env.TWILIO_SERVICE_SID;
 const client = twilio(accountSid, authToken);
 
 export const requestOTP = async (req, res) => {
-  const { identifier, method, actionType } = req.body;
+  const { identifier, method, actionType, testMode } = req.body;
   // console.log('Request Body:', req.body);
 
   if (!identifier || !method || !actionType) {
@@ -29,6 +29,11 @@ export const requestOTP = async (req, res) => {
       return res.status(400).json({ message: 'User already exists. Please log in.', userExists: true });
     }
 
+    if (testMode) {
+      // Skip OTP request in test mode
+      return res.status(200).json({ message: 'Test mode enabled. OTP request skipped.', userExists: !!user });
+    }
+
     if (method === 'sms') {
       await sendSMS(identifier);
       return res.status(200).json({ message: 'OTP sent via SMS.', userExists: !!user });
@@ -42,12 +47,12 @@ export const requestOTP = async (req, res) => {
 };
 
 export const verifyOTP = async (req, res) => {
-  const { identifier, otp, actionType, method } = req.body;
+  const { identifier, otp, actionType, method, testMode } = req.body;
   // console.log('Request Body:', req.body);
 
   try {
     // ✅ OTP Bypass for Testing Mode
-    if (otp === "123456") {
+    if (testMode || otp === "123456") {
       console.log("Testing mode: OTP bypassed ✅");
       
       if (actionType === "signin") {
@@ -110,7 +115,7 @@ export const verifyOTP = async (req, res) => {
 };
 
 export const registerUser = async (req, res) => {
-  const { name, email, mobile, dob, gender } = req.body;
+  const { name, email, mobile, dob, gender, testMode } = req.body;
 
   try {
     let existingUser = await User.findOne({ $or: [{ email }, { mobile }] });
@@ -120,6 +125,10 @@ export const registerUser = async (req, res) => {
     }
 
     const newUser = new User({ name, email, mobile, dob, gender, isVerified: true });
+    // Ensure isMobileVerified remains false for test mode
+    if (!testMode) {
+      newUser.isMobileVerified = false;
+    }
     await newUser.save();
     const token = generateToken(newUser._id);
     res.status(201).json({ token, user: newUser });
