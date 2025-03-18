@@ -50,7 +50,7 @@ export const getAllProducts = async (req, res) => {
 export const getProductsByCategory = async (req, res) => {
   try {
     const category = req.params.name;
-    const products = await Product.find({ category });
+    const products = await Product.find({ category }).populate('vendor');
     const productsWithUrls = await Promise.all(products.map(async (product) => {
       const imageUrl = await getObjectURL(product.imageUrl);
       return { ...product._doc, imageUrl };
