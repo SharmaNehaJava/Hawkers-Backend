@@ -24,6 +24,43 @@ const s3Client = new S3Client({
     },
 });
 
+export const getVendorDashboard = async (req, res) => {
+    try {
+        const products = await Product.find({ vendor: req.vendor._id }); // Assuming `req.vendor._id` contains the logged-in vendor's ID
+
+        const totalProducts = products.reduce((sum, product) => sum + product.stock, 0);
+
+        const lowStockCount = products.filter(product => product.stock < 10).length;
+
+        res.status(200).json({
+            totalProducts,
+            lowStockCount,
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to fetch dashboard data', error });
+    }
+};
+
+export const deleteVendorAccount = async (req, res) => {
+    try {
+      const { vendorId } = req.params;
+  
+      // Check if vendor exists
+      const vendor = await Vendor.findById(vendorId);
+      if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+  
+      // Delete all vendor products
+      await Product.deleteMany({ vendor: vendorId });
+  
+      // Delete vendor
+      await Vendor.findByIdAndDelete(vendorId);
+  
+      res.status(200).json({ message: "Vendor account deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting vendor account:", error);
+      res.status(500).json({ message: "Failed to delete account" });
+    }
+};
 
 // Function to generate OTP
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -31,22 +68,23 @@ const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString()
 // Request OTP for Vendor (login/registration)
 export const requestVendorOTP = async (req, res) => {
     const { identifier, method, actionType } = req.body;
-    // console.log('Request Body:', req.body);
+    console.log('Request Body:', req.body);
 
     if (!identifier || !method || !actionType) {
         console.error('Missing required fields:', req.body);
         return res.status(400).json({ message: 'Missing required fields' });
     }
-
+    console.log(1);
     try {
         let vendor = await Vendor.findOne({ $or: [{ email: identifier }, { mobile: identifier }] });
 
         if (actionType === 'signin' && !vendor) {
-            return res.status(404).json({ message: 'Vendor not found. Please register first.', vendorExists: false });
+            console.log(2);
+            return res.status(200).json({ message: 'Vendor not found. Please register first.', vendorExists: false });
         }
 
         if (actionType === 'signup' && vendor) {
-            return res.status(400).json({ message: 'Vendor already exists. Please log in.', vendorExists: true });
+            return res.status(200).json({ message: 'Vendor already exists. Please log in.', vendorExists: true });
         }
 
         // Sending OTP using Twilio for SMS
@@ -99,10 +137,10 @@ export const verifyVendorOTP = async (req, res) => {
                     // console.log("chalo ye bhi ho gya");
                     const token = generateToken(vendor._id);
                     return res.status(200).json({ verified: true, token, vendor });
-                  } catch (saveError) {
+                } catch (saveError) {
                     console.error('Error saving vendor:', saveError);
                     return res.status(500).json({ error: 'Failed to save vendor. Please try again later.' });
-                  }
+                }
             } else if (actionType === 'signup') {
                 return res.status(200).json({ verified: true });
             }
@@ -117,32 +155,30 @@ export const verifyVendorOTP = async (req, res) => {
 
 // Vendor Registration
 export const registerVendor = async (req, res) => {
-    const { name, email, mobile, businessName,businessType, address } = req.body;
-
+    const { name, email, mobile, businessName, businessType } = req.body;
     try {
         let existingVendor = await Vendor.findOne({ $or: [{ email }, { mobile }] });
 
         if (existingVendor) {
             return res.status(400).json({ message: 'Vendor already exists. Please log in.' });
         }
-
+        console.log(1);
         const newVendor = new Vendor({
             name,
             email,
             mobile,
             businessName,
             businessType,
-            address,
-            isVerified: true
+            isMobileVerified: true,
+            location: { type: "Point", coordinates: [0, 0] },
         });
 
         await newVendor.save();
-
         const token = generateToken(newVendor._id);
-        // console.log('Generated Token:', token);
         res.status(201).json({ token, vendor: newVendor });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to register vendor.' });
+        console.error("Error saving vendor:", error);  // Log the full error message
+    res.status(500).json({ error: 'Failed to register vendor.', details: error.message });
     }
 };
 
@@ -256,6 +292,65 @@ export const deleteProduct = async (req, res) => {
     }
 };
 
+// get Vendor Dashboard
+export const getOrderDashboard = async (req, res) => {
+    try {
+        const vendorId = req.vendor.id;
+        const totalOrders = await Order.countDocuments({ vendor: vendorId });
+        const pendingOrders = await Order.countDocuments({
+            vendor: vendorId,
+            status: { $in: ['placed', 'processing', 'shipped'] }
+        });
+        const completedOrders = await Order.countDocuments({
+            vendor: vendorId,
+            status: 'delivered'
+        });
+        const failedOrders = await Order.countDocuments({
+            vendor: vendorId,
+            status: 'failed'
+        });
+
+        // 🔍 STEP 1: Log all delivered orders for this vendor
+        // const deliveredOrders = await Order.find({ vendor: vendorId, status: 'delivered' });
+        // console.log("Delivered Orders:", JSON.stringify(deliveredOrders, null, 2));
+        // const totalRevenueResult = await Order.aggregate([
+        //     {
+        //         $match: {
+        //             vendor: new mongoose.Types.ObjectId(vendorId),
+        //             status: { $eq: "delivered" },
+        //         }
+        //     },
+        //     { $unwind: "$items" }, // Split array into separate documents
+        //     {
+        //         $group: {
+        //             _id: null,
+        //             totalRevenue: {
+        //                 $sum: {
+        //                     $multiply: [
+        //                         { $toDouble: "$items.price" },
+        //                         { $toDouble: "$items.quantity" }
+        //                     ]
+        //                 }
+        //             }
+        //         }
+        //     }
+        // ]);
+        // console.log("Step 3: Aggregation Result:", JSON.stringify(totalRevenueResult, null, 2));
+
+        // const totalRevenue = totalRevenueResult.length > 0 ? totalRevenueResult[0].totalRevenue : 0;
+        // console.log(totalRevenue)
+        // console.log(5);
+        res.status(200).json({
+            totalOrders,
+            pendingOrders,
+            completedOrders,
+            failedOrders,
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to retrieve analytics' });
+    }
+};
+
 // Get Vendor Orders
 export const getVendorOrders = async (req, res) => {
     try {
@@ -268,9 +363,11 @@ export const getVendorOrders = async (req, res) => {
 
 // Update Order Status for Vendor Orders
 export const updateOrderStatus = async (req, res) => {
+    // console.log(req.body);
+    // console.log(req.body.order.vendor);
     const { id: orderId } = req.params;  // Extracting orderId from URL parameter
-    const { status } = req.body;  // Getting new status from the request body
-    const vendorId = req.user._id;  // Assuming the vendor is authenticated and their ID is in req.user
+    const { status, order } = req.body;  // Getting new status from the request body
+    const vendorId = order?.vendor;  // Assuming the vendor is authenticated and their ID is in req.user
 
     if (!status) {
         return res.status(400).json({ message: 'Status is required.' });
@@ -278,21 +375,22 @@ export const updateOrderStatus = async (req, res) => {
 
     try {
         // Check if the vendor exists
+        // console.log(1);
         const vendor = await Vendor.findById(vendorId);
         if (!vendor) {
             return res.status(404).json({ message: 'Vendor not found.' });
         }
-
+        // console.log(2);
         // Find the specific order within vendor's orders
         const order = await Order.findOne({ _id: orderId, vendor: vendorId });
         if (!order) {
             return res.status(404).json({ message: 'Order not found.' });
         }
-
+        // console.log(3);
         // Update the order status
         order.status = status;
         await order.save();
-
+        // console.log(4);
         return res.status(200).json({ message: 'Order status updated successfully.', order });
     } catch (error) {
         return res.status(500).json({ message: 'Failed to update order status.', error });
@@ -300,19 +398,19 @@ export const updateOrderStatus = async (req, res) => {
 };
 
 // Basic Analytics (e.g., Total Sales, Total Orders)
-export const getVendorDashboard = async (req, res) => {
-    try {
-        const totalOrders = await Order.countDocuments({ vendor: req.vendor.id });
-        const totalSales = await Order.aggregate([
-            { $match: { vendor: req.vendor.id, status: 'Completed' } },
-            { $group: { _id: null, totalSales: { $sum: '$totalAmount' } } },
-        ]);
+// export const getVendorDashboard = async (req, res) => {
+//     try {
+//         const totalOrders = await Order.countDocuments({ vendor: req.vendor.id });
+//         const totalSales = await Order.aggregate([
+//             { $match: { vendor: req.vendor.id, status: 'Completed' } },
+//             { $group: { _id: null, totalSales: { $sum: '$totalAmount' } } },
+//         ]);
 
-        res.status(200).json({
-            totalOrders,
-            totalSales: totalSales[0] ? totalSales[0].totalSales : 0,
-        });
-    } catch (error) {
-        res.status(500).json({ message: 'Failed to retrieve analytics' });
-    }
-};
+//         res.status(200).json({
+//             totalOrders,
+//             totalSales: totalSales[0] ? totalSales[0].totalSales : 0,
+//         });
+//     } catch (error) {
+//         res.status(500).json({ message: 'Failed to retrieve analytics' });
+//     }
+// };
