@@ -20,12 +20,14 @@ export const createOrder = asyncHandler(async (req, res) => {
   };
 
   try {
+    // console.log("Received Data: "+req.body);
     const razorpayOrder = await razorpayInstance.orders.create(options);
     // console.log('Razorpay Order:', razorpayOrder);
     // console.log('Cart Items:', cartItems);
     
     // Group items by vendor
     const ordersByVendor = cartItems.reduce((acc, item) => {
+      console.log(item.vendor_id);
       if (!acc[item.vendor_id]) {
         acc[item.vendor_id] = [];
       }
@@ -43,7 +45,7 @@ export const createOrder = asyncHandler(async (req, res) => {
         paymentId: razorpayOrder.id,
         status: 'placed'
       });
-      // console.log(order);
+      console.log(order);
       return order.save();
     });
 
@@ -108,7 +110,6 @@ export const handlePaymentSuccess = asyncHandler(async (req, res) => {
               type: address.type, // Ensure type is correctly passed
             },
             paymentId: razorpayPaymentId,
-            status: 'processing',
           },
         },
         { new: true }
